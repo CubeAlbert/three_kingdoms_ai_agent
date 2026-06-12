@@ -40,6 +40,16 @@ User text → embed → ChromaDB search (deterministic)
   └── Miss: Orchestrator persona + chat rules + LLM → response
 ```
 
+## Hard Rules
+
+**These rules override everything else, in all modes (including auto mode).**
+
+- 🚫 **Never `git commit` or `git push` without explicit user consent.** Ask first. Even if the user said "commit this" earlier, each commit requires confirmation.
+- 🚫 **Never revert, reset, or rollback code** (`git reset`, `git revert`, `git checkout --`, discarding changes) without explicit user consent.
+- 🚫 **Never force-push or rewrite history** (`git push --force`, `git rebase`) without explicit user consent.
+
+> These exist because accidental commits and data loss are irreversible. When in doubt, ask.
+
 ## Design Principle: Deterministic-First
 
 Prefer deterministic control wherever possible. LLM is only used when necessary:
@@ -99,8 +109,19 @@ API keys are read from environment variables (e.g., `${DEEPSEEK_API_KEY}`), neve
 
 - `docs/plan.md` — Full architecture plan, module design, development phases. **Source of truth for design decisions.**
 - `docs/meme.md` — **Primary meme knowledge base.** Human-authored, structured as `# 分类 — agent_id` → `## 子类型` → flat list of meme lines with optional `→ 外部:` resource annotations.
+- `docs/task.md` — **Cross-session task tracker.** Check at the start of every session to see what was in progress. Granularity: file/method level. Status: ⬜ pending / 🔄 in_progress / ✅ done / ⏸️ blocked. The `🔥 当前任务` section at the top tells you exactly where the last session left off.
 - `docs/source_description.md` — Data source documentation (stub)
+
+## Session Workflow
+
+**At the start of every session**, before doing anything else:
+
+1. Read `docs/task.md` — the `🔥 当前任务` section tells you what was in progress
+2. If a task is marked 🔄, resume it
+3. If no task is in progress, pick the next ⬜ item from the Phase 1 checklist
+4. When starting a task: update `🔥 当前任务`, mark it 🔄 in the checklist
+5. When finishing a task: mark it ✅, update or clear `🔥 当前任务`
 
 ## Current State
 
-Project is in **Phase 1 (MVP)** — planning complete, no code written yet. See `docs/plan.md` for the implementation checklist.
+Project is in **Phase 1 (MVP)** — planning complete, no code written yet. See `docs/plan.md` for the full architecture and `docs/task.md` for the implementation checklist.
