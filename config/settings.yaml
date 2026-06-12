@@ -1,0 +1,22 @@
+# Global application settings
+# ============================
+# Non-sensitive app-level configuration.
+# Values support ${ENV_VAR} substitution for overrides at runtime.
+
+# ---------------------------------------------------------------------------
+# RAG (vector search / meme matching)
+# ---------------------------------------------------------------------------
+rag:
+  similarity_threshold: 0.75   # Cosine similarity floor for a meme hit
+  top_k: 3                     # Max matches to return per search
+
+# ---------------------------------------------------------------------------
+# Memory
+# ---------------------------------------------------------------------------
+memory:
+  window_size: 10              # Recent conversation turns kept in window memory
+
+# ---------------------------------------------------------------------------
+# Debug / development
+# ---------------------------------------------------------------------------
+debug: false

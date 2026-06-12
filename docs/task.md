@@ -2,7 +2,7 @@
 
 ## 🔥 当前任务
 
-无
+Phase 1.3 — LLM Client (`core/llm/client.py`): chat() + embed()
 
 ---
 
@@ -26,9 +26,9 @@
 - ✅ `pip install -e .` 可安装验证
 
 ### 2. 配置层
-- ⬜ `config/llm.yaml` — LLM provider 配置（deepseek/qwen/minimax/ollama）
-- ⬜ `config/settings.yaml` — 全局 settings（相似度阈值、窗口大小等）
-- ⬜ `core/config.py` — 配置加载工具（读取 yaml + `${ENV_VAR}` 替换）
+- ✅ `config/llm.yaml` — LLM provider 操作配置（timeout, max_retries），凭证从环境变量读取
+- ✅ `config/settings.yaml` — 全局 settings（相似度阈值、窗口大小等）
+- ✅ `core/config.py` — 配置加载工具（LLMConfig 四环境变量 + Settings + ConfigLoader）
 
 ### 3. LLM Client
 - ⬜ `core/llm/client.py` — `__init__()` 初始化（读配置、选 provider）

@@ -1,0 +1,25 @@
+# LLM provider configuration
+# ==========================
+# All connection and credential values are read from environment variables.
+# This file only holds non-sensitive operational settings.
+#
+# Environment variables:
+#   LLM_BASE_URL      — API base URL (e.g. https://api.deepseek.com/v1,
+#                        http://localhost:11434/v1 for ollama)
+#   LLM_AUTH_ENABLED  — "true" / "false", whether to send Authorization header
+#                        (set "false" for ollama, "true" for cloud providers)
+#   LLM_API_KEY       — API key / bearer token
+#   LLM_MODEL         — Model name (e.g. deepseek-chat, qwen2.5:7b)
+#
+# Example:
+#   export LLM_BASE_URL="https://api.deepseek.com/v1"
+#   export LLM_AUTH_ENABLED="true"
+#   export LLM_API_KEY="sk-..."
+#   export LLM_MODEL="deepseek-chat"
+
+# ---------------------------------------------------------------------------
+# Operational settings (non-sensitive)
+# ---------------------------------------------------------------------------
+
+timeout: 60        # Request timeout in seconds
+max_retries: 3     # Max retries on transient failures
