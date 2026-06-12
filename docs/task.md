@@ -20,10 +20,10 @@
 ## Phase 1 — MVP
 
 ### 1. 项目骨架
-- ⬜ 创建 `pyproject.toml` + 依赖声明
-- ⬜ 创建完整目录结构 (`src/three_kingdoms_ai_agent/`, `config/`, `data/`, `tests/`)
-- ⬜ 创建 `requirements.txt`
-- ⬜ `pip install -e .` 可安装验证
+- ✅ 创建 `pyproject.toml` + 依赖声明
+- ✅ 创建完整目录结构 (`src/three_kingdoms_ai_agent/`, `config/`, `data/`, `tests/`)
+- ✅ 创建 `requirements.txt`
+- ✅ `pip install -e .` 可安装验证
 
 ### 2. 配置层
 - ⬜ `config/llm.yaml` — LLM provider 配置（deepseek/qwen/minimax/ollama）
