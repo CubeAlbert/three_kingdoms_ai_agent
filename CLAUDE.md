@@ -18,7 +18,7 @@ Channel (CLI) → Orchestrator → RAG Router (ChromaDB) → SubAgent
 **Key abstractions:**
 
 - **`Channel`** (`core/channel/base.py`) — I/O abstraction. Agent core never touches stdin/stdout/HTTP directly; it only talks to a `Channel`. Current: `CliChannel`. Future: `WebChannel`, `WeChatChannel`.
-- **`LLMClient`** (`core/llm/client.py`) — Unified OpenAI-compatible client. Switches between providers (deepseek, qwen, minimax, ollama) via `config/llm.yaml`. Supports both `chat()` and `embed()`.
+- **`LLMClient`** (`core/llm/client.py`) — Synchronous OpenAI-compatible client. Configured via environment variables (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_API_KEY`, etc.), not YAML provider profiles. Returns `ChatResult` (structured `Action` vs free-form text). Structured output is parsed by `core/llm/parser.py` (5-layer JSON repair chain) and validated by `core/llm/action.py` (`ActionType`: `switch`/`exit`/`tool`). Also provides `embed()` / `embed_batch()` for RAG.
 - **`Router`** (`core/rag/router.py`) — On startup, loads `data/memes.yaml`, embeds all meme phrases, stores in ChromaDB with metadata (`agent_id`, `sub_type`, original text). On each user message, embeds it and does similarity search. If similarity > threshold, returns `RouteResult` with `agent_id` + `sub_type`. **Deterministic — no LLM involved.**
 - **`Orchestrator`** (`core/orchestrator.py`) — Main loop with two prompt modes:
   - **Hit**: RAG routes deterministically → sub-agent generates structured result → Orchestrator template-renders (no LLM for integration)
@@ -63,7 +63,7 @@ Prefer deterministic control wherever possible. LLM is only used when necessary:
 - **ChromaDB** for vector storage (meme embeddings), from MVP onwards
 - **PyYAML** for config (`config/llm.yaml`, `config/settings.yaml`, `data/memes.yaml`)
 - **`rich`** optional for CLI formatting
-- **Async throughout** (`async/await`)
+- **Synchronous throughout** — MVP uses sync I/O; async may be revisited in Phase 3
 
 ## Adding a New Sub-Agent
 
@@ -122,6 +122,14 @@ API keys are read from environment variables (e.g., `${DEEPSEEK_API_KEY}`), neve
 4. When starting a task: update `🔥 当前任务`, mark it 🔄 in the checklist
 5. When finishing a task: mark it ✅, update or clear `🔥 当前任务`
 
+**When implementation deviates from `docs/plan.md`**, you MUST update the relevant section in `docs/plan.md` before marking the task done:
+
+- `docs/plan.md` is the **canonical source of truth** for architecture and design decisions.
+- If the implemented interface, data flow, or design differs from what `docs/plan.md` describes, annotate the section with `> 📝 **已实现**: ...` noting the delta.
+- If new sub-modules are added that weren't in the original plan (e.g., `action.py`, `parser.py`), document them under the parent module's section.
+- If unresolved design questions come up during implementation, add them under a `#### ⏸️ 待讨论` heading in the relevant section.
+- Temporary implementation plan files under `.claude/plans/` are ephemeral — `docs/plan.md` is what survives across sessions.
+
 ## Current State
 
-Project is in **Phase 1 (MVP)** — planning complete, no code written yet. See `docs/plan.md` for the full architecture and `docs/task.md` for the implementation checklist.
+Project is in **Phase 1 (MVP)** — modules 1-3 complete (project skeleton, config layer, LLM client). Next: Channel layer (`core/channel/`). See `docs/plan.md` for the full architecture and `docs/task.md` for the implementation checklist.

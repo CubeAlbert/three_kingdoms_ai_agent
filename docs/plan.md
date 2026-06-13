@@ -224,6 +224,30 @@ providers:
 
 - 同时支持 chat 和 embedding 两种调用
 
+> 📝 **已实现** (`core/llm/client.py`)，与原始设计有以下差异：
+> - 实际采用单 provider + 环境变量（`LLM_BASE_URL` 等），非多 provider YAML
+> - 返回值改为 `ChatResult`（区分结构化 action vs 非结构化对话）
+> - 同步模式，非 async
+> - 新增 `core/llm/action.py`（ActionType 枚举 + Action 校验）和 `core/llm/parser.py`（5 层 JSON 修复链）
+
+#### ⏸️ 待讨论：ActionType 扩展与重构
+
+当前 `ActionType` 三种（`switch` / `exit` / `tool`），随子 Agent 增加需要审视：
+
+- 新增类型：`reply`（结构化回复模板）、`ask`（反问用户）、`chain`（串联多个 action）
+- `Action` 字段：是否需要更通用的 `payload` / `meta`，`params` 是否所有 action 都需要
+- 校验逻辑：`from_dict()` 当前内聚在 Action，后续是否外置为 registry 模式
+- Prompt 联动：新增 type 需同步更新 `prompts/` 下的 structured output 模板
+
+#### ⏸️ 待讨论：JSON fallback parse 逻辑
+
+当前 5 层修复链（直接解析 → 去 fences → 修复引号/逗号/key → brace 提取 → 放弃），需要审查：
+
+- `_light_fix` 侵略性边界：单引号替换在混用引号风格时可能引入新错误
+- Brace 提取的 `\"` 处理：当前用 brace counting，是否换 `json.JSONDecoder.raw_decode`
+- Step 3/4 顺序：先 fix 再 extract，若文本有多个 `{...}` 且第一个非 JSON，可能误改
+- 失败策略：静默返回 `None`，是否需要日志/计数器让调用方感知"接近 JSON 但解析失败"
+
 ### 3. RAG 梗匹配系统 (`core/rag/`)
 
 这是触发匹配的核心——解决"不同梗表达相同意图"的问题。
