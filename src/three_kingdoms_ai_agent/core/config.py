@@ -74,6 +74,7 @@ ENV_LLM_BASE_URL = "LLM_BASE_URL"
 ENV_LLM_AUTH_ENABLED = "LLM_AUTH_ENABLED"
 ENV_LLM_API_KEY = "LLM_API_KEY"
 ENV_LLM_MODEL = "LLM_MODEL"
+ENV_LLM_EMBED_MODEL = "LLM_EMBED_MODEL"
 
 
 @dataclass
@@ -88,10 +89,11 @@ class LLMConfig:
     auth_enabled: bool
     api_key: str
     model: str
+    embed_model: str
 
     @classmethod
     def from_env(cls) -> LLMConfig:
-        """Build an :class:`LLMConfig` from the four canonical environment variables.
+        """Build an :class:`LLMConfig` from environment variables.
 
         ::
 
@@ -99,13 +101,17 @@ class LLMConfig:
             LLM_AUTH_ENABLED → auth_enabled  ("true"/"false", default "true")
             LLM_API_KEY      → api_key
             LLM_MODEL        → model
+            LLM_EMBED_MODEL  → embed_model   (falls back to LLM_MODEL when empty)
         """
+        chat_model = os.environ.get(ENV_LLM_MODEL, "")
+        embed_model = os.environ.get(ENV_LLM_EMBED_MODEL, "")
         return cls(
             base_url=os.environ.get(ENV_LLM_BASE_URL, ""),
             auth_enabled=os.environ.get(ENV_LLM_AUTH_ENABLED, "true").lower()
             == "true",
             api_key=os.environ.get(ENV_LLM_API_KEY, ""),
-            model=os.environ.get(ENV_LLM_MODEL, ""),
+            model=chat_model,
+            embed_model=embed_model or chat_model,
         )
 
     def validate(self) -> list[str]:

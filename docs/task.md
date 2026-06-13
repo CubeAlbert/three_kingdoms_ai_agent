@@ -2,7 +2,7 @@
 
 ## 🔥 当前任务
 
-Phase 1.3 — LLM Client (`core/llm/client.py`): chat() + embed()
+Phase 1.4 — Channel 层 (`core/channel/base.py` + `cli.py`)
 
 ---
 
@@ -28,13 +28,14 @@ Phase 1.3 — LLM Client (`core/llm/client.py`): chat() + embed()
 ### 2. 配置层
 - ✅ `config/llm.yaml` — LLM provider 操作配置（timeout, max_retries），凭证从环境变量读取
 - ✅ `config/settings.yaml` — 全局 settings（相似度阈值、窗口大小等）
-- ✅ `core/config.py` — 配置加载工具（LLMConfig 四环境变量 + Settings + ConfigLoader）
+- ✅ `core/config.py` — 配置加载工具（LLMConfig 五环境变量 + Settings + ConfigLoader）
 
 ### 3. LLM Client
-- ⬜ `core/llm/client.py` — `__init__()` 初始化（读配置、选 provider）
-- ⬜ `core/llm/client.py` — `chat(messages, system_prompt?, temperature?) -> str`
-- ⬜ `core/llm/client.py` — `embed(text) -> list[float]` / `embed_batch(texts) -> list[list[float]]`
-- ⬜ 验证：调通至少一个 provider 的 chat + embed
+- ✅ `core/llm/action.py` — ActionType 枚举 + Action dataclass + from_dict() 严格校验
+- ✅ `core/llm/parser.py` — 5 层 JSON 修复链 + parse_structured()
+- ✅ `core/llm/client.py` — LLMClient（chat / embed / embed_batch）+ ChatResult + LLMError
+- ✅ 验证：134 个单元测试通过，覆盖 action / parser / client 全部路径
+- 📝 待集成验证：设好环境变量后调通至少一个 provider 的 chat + embed（`tests/core/llm/test_client.py -m integration`）
 
 ### 4. Channel 层
 - ⬜ `core/channel/base.py` — Channel 抽象基类 + Message / AgentResponse 数据类
@@ -72,4 +73,16 @@ Phase 1.3 — LLM Client (`core/llm/client.py`): chat() + embed()
 
 ## 笔记 / 踩坑记录
 
-<!-- 开发过程中发现的问题、备忘、临时决策写在这里 -->
+### ⏸️ 待讨论：ActionType 扩展与重构
+- 当前三种（switch/exit/tool），后续需审视频繁新增
+- Action 字段是否需要更通用的 payload/meta
+- 校验逻辑是否应外置为 registry 模式
+- 与 structured output prompt 模板的联动机制
+- 详见 plan 文件 `TODO 1`
+
+### ⏸️ 待讨论：JSON fallback parse 逻辑
+- `_light_fix` 的侵略性边界 — 需真实 bad case 积累
+- `_extract_first_json_block` 的 `\"` 处理 — 是否换 `raw_decode`
+- Step 3/4 顺序优化 — 先 extract 再 fix 可能更安全
+- 失败静默返回 None — 是否需要日志/计数器
+- 详见 plan 文件 `TODO 2`

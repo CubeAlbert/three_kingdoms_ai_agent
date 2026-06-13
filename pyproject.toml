@@ -40,3 +40,6 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "integration: tests that require a live LLM provider (set env vars first)",
+]
