@@ -110,6 +110,7 @@ class LLMClient:
         self,
         messages: list[dict],
         temperature: float = 0.3,
+        json_mode: bool = False,
     ) -> ChatResult:
         """Send a chat completion request and return a structured result.
 
@@ -123,6 +124,12 @@ class LLMClient:
         temperature : float
             Sampling temperature (default 0.3 — conservative, suitable for
             the main orchestrator; sub-agents may pass higher values).
+        json_mode : bool
+            When ``True``, sets ``response_format={'type': 'json_object'}``
+            to instruct the LLM to produce valid JSON.  The caller **must**
+            ensure the prompt contains the word "json" — both OpenAI and
+            DeepSeek require this, and the API will return a 400 error
+            without it.  Default ``False`` (free-form text).
 
         Returns
         -------
@@ -135,12 +142,16 @@ class LLMClient:
         LLMError
             On any API or network failure.
         """
+        kwargs: dict = {
+            "model": self._config.model,
+            "messages": messages,
+            "temperature": temperature,
+        }
+        if json_mode:
+            kwargs["response_format"] = {"type": "json_object"}
+
         try:
-            response = self._client.chat.completions.create(
-                model=self._config.model,
-                messages=messages,  # type: ignore[arg-type]
-                temperature=temperature,
-            )
+            response = self._client.chat.completions.create(**kwargs)  # type: ignore[arg-type]
         except Exception as exc:
             raise LLMError(
                 f"LLM chat request failed: {exc}", original=exc

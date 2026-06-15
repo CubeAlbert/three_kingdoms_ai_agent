@@ -229,6 +229,15 @@ providers:
 > - 返回值改为 `ChatResult`（区分结构化 action vs 非结构化对话）
 > - 同步模式，非 async
 > - 新增 `core/llm/action.py`（ActionType 枚举 + Action 校验）和 `core/llm/parser.py`（5 层 JSON 修复链）
+> - 新增 `chat()` 的 `json_mode` 参数：为 `True` 时透传 `response_format={'type': 'json_object'}` 给 API，从服务端约束输出为合法 JSON。DeepSeek 和 OpenAI 均支持此参数，但 DeepSeek **不支持** `json_schema` 类型（OpenAI structured outputs）。即使开启 JSON mode，5 层修复链仍保留作为兜底，因为 DeepSeek JSON mode 仍可能包裹 markdown 代码块或偶发空返回。
+> 
+> #### json_mode 约束与责任
+> 
+> `json_mode=True` 生效有两个前提，**均由调用方负责**：
+> 1. **Prompt 中必须包含 "json" 字样** — 否则 API 返回 400 错误（OpenAI 和 DeepSeek 共同的硬性要求）
+> 2. **Prompt 中应包含目标 JSON 结构示例** — DeepSeek 不支持 `json_schema`，只能通过 prompt 示例引导字段结构
+> 
+> 调用链：`BaseAgent.handle()` → `LLMClient.chat(json_mode=True)`，其中 `BaseAgent` 的三层 prompt 拼装（System + Sub-Type + User）必须保证 System Prompt 中包含 "json" 关键字和 Action 结构示例。详见 `agents/base.py` 的 prompt 模板。
 
 #### ⏸️ 待讨论：ActionType 扩展与重构
 

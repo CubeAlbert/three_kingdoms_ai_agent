@@ -34,8 +34,10 @@ Phase 1.4 — Channel 层 (`core/channel/base.py` + `cli.py`)
 - ✅ `core/llm/action.py` — ActionType 枚举 + Action dataclass + from_dict() 严格校验
 - ✅ `core/llm/parser.py` — 5 层 JSON 修复链 + parse_structured()
 - ✅ `core/llm/client.py` — LLMClient（chat / embed / embed_batch）+ ChatResult + LLMError
-- ✅ 验证：134 个单元测试通过，覆盖 action / parser / client 全部路径
-- 📝 待集成验证：设好环境变量后调通至少一个 provider 的 chat + embed（`tests/core/llm/test_client.py -m integration`）
+- ✅ `chat()` 新增 `json_mode` 参数 → 透传 `response_format={'type': 'json_object'}` 给 API，从服务端约束 JSON 输出
+- ✅ 验证：136 个单元测试通过 + 3 个集成测试通过（真实 DeepSeek API，含 json_mode 端到端验证）
+- ✅ 集成测试独立文件 `tests/core/llm/test_client_integration.py`，不 mock 环境变量
+- ⏸️ 待集成验证：设好环境变量后调通至少一个 provider 的 embed（当前 qwen2.5:7b 不支持 embedding 端点）
 
 ### 4. Channel 层
 - ⬜ `core/channel/base.py` — Channel 抽象基类 + Message / AgentResponse 数据类
@@ -86,3 +88,17 @@ Phase 1.4 — Channel 层 (`core/channel/base.py` + `cli.py`)
 - Step 3/4 顺序优化 — 先 extract 再 fix 可能更安全
 - 失败静默返回 None — 是否需要日志/计数器
 - 详见 plan 文件 `TODO 2`
+
+### ⬜ TODO：json_mode 的 prompt 拼接
+
+`json_mode=True` 要求 prompt 中必须包含 "json" 字样 + JSON 结构示例，否则 API 返回 400。这项责任在**调用方**——即 `BaseAgent.handle()` 的三层 prompt 拼装。
+
+**待做：**
+
+- [ ] `agents/base.py` — System Prompt 模板需内嵌 "json" 关键字和目标 Action JSON 结构示例
+- [ ] `agents/base.py` — `handle()` 调用 `llm.chat()` 时传入 `json_mode=True`
+- [ ] 各子 Agent 的 `system_prompt` 和 `sub_type_prompts` 需遵循 JSON 输出约定
+- [ ] Orchestrator 的聊天模式（RAG miss）**不**开 json_mode（自由对话）
+- [ ] 验证：`LLMClient.chat(json_mode=True)` + 合规 prompt → API 不报 400 → 返回结构化 Action
+
+**为什么需要这个：** DeepSeek 不支持 `json_schema` 类型，只能通过 `response_format={'type': 'json_object'}` + prompt 示例来约束输出结构。没有 prompt 配合，json_mode 形同虚设。

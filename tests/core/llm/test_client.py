@@ -6,7 +6,6 @@ valid environment variables and a live LLM provider.
 
 from __future__ import annotations
 
-import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -138,6 +137,35 @@ class TestLLMClientChat:
             with pytest.raises(LLMError, match="Connection refused"):
                 client.chat([{"role": "user", "content": "hi"}])
 
+    def test_chat_json_mode_false_by_default(self, client):
+        """When json_mode is not set, response_format must NOT be in the API call."""
+        mock_msg = MagicMock()
+        mock_msg.content = "ok"
+        mock_choice = MagicMock()
+        mock_choice.message = mock_msg
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+
+        with patch.object(client._client.chat.completions, "create", return_value=mock_response) as mock_create:
+            client.chat([{"role": "user", "content": "hi"}])
+            call_kwargs = mock_create.call_args.kwargs
+            assert "response_format" not in call_kwargs
+
+    def test_chat_json_mode_true_sets_response_format(self, client):
+        """When json_mode=True, response_format={'type': 'json_object'} must be passed."""
+        mock_msg = MagicMock()
+        mock_msg.content = '{"action": "exit"}'
+        mock_choice = MagicMock()
+        mock_choice.message = mock_msg
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+
+        with patch.object(client._client.chat.completions, "create", return_value=mock_response) as mock_create:
+            client.chat([{"role": "user", "content": "输出json"}], json_mode=True)
+            call_kwargs = mock_create.call_args.kwargs
+            assert "response_format" in call_kwargs
+            assert call_kwargs["response_format"] == {"type": "json_object"}
+
     def test_chat_passes_messages_through(self, client):
         messages = [
             {"role": "system", "content": "You are helpful."},
@@ -260,69 +288,3 @@ class TestLLMError:
         assert "failed" in str(err)
 
 
-# ---------------------------------------------------------------------------
-# Integration tests (require live LLM)
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.integration
-class TestLLMClientIntegration:
-    """Manual integration test — set env vars and run with:
-
-        pytest tests/core/llm/test_client.py -m integration -s
-
-    Example env vars for Ollama (needs ollama running locally):
-        LLM_BASE_URL=http://localhost:11434/v1
-        LLM_AUTH_ENABLED=false
-        LLM_MODEL=qwen2.5:7b
-    """
-
-    @pytest.fixture
-    def env_is_configured(self) -> bool:
-        return bool(os.environ.get(ENV_LLM_BASE_URL))
-
-    def test_chat_returns_content(self, env_is_configured):
-        if not env_is_configured:
-            pytest.skip("LLM env vars not set")
-        config = LLMConfig.from_env()
-        client = LLMClient(config)
-        result = client.chat(
-            [{"role": "user", "content": "回复一个'你好'"}],
-            temperature=0.1,
-        )
-        assert len(result.content) > 0
-        # A simple greeting should NOT be structured
-        assert result.action is None
-
-    def test_embed_returns_float_list(self, env_is_configured):
-        if not env_is_configured:
-            pytest.skip("LLM env vars not set")
-        config = LLMConfig.from_env()
-        client = LLMClient(config)
-        result = client.embed("你好世界")
-        assert isinstance(result, list)
-        assert len(result) > 0
-        assert all(isinstance(x, float) for x in result)
-
-    def test_structured_exit_action(self, env_is_configured):
-        if not env_is_configured:
-            pytest.skip("LLM env vars not set")
-        config = LLMConfig.from_env()
-        client = LLMClient(config)
-        result = client.chat(
-            [
-                {
-                    "role": "system",
-                    "content": (
-                        "你是一个指令解析器。你的回答必须是一个纯JSON对象，不要有任何其他文字。\n"
-                        '当你需要结束时，输出：{"action": "exit"}'
-                    ),
-                },
-                {"role": "user", "content": "结束"},
-            ],
-            temperature=0.1,
-        )
-        assert result.is_structured, (
-            f"Expected structured action but got: {result.content}"
-        )
-        assert result.action.type == ActionType.EXIT
