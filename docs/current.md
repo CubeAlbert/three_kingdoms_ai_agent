@@ -2,13 +2,13 @@
 
 **Current Phase:** Phase 1 — MVP
 
-**Current Task:** 4. Channel 层 (`core/channel/`)
+**Current Task:** 5. Memory 层 (`core/memory/`)
 
-**Current SubTask:** `core/channel/base.py` — Channel 抽象基类 + Message / AgentResponse 数据类
+**Current SubTask:** `core/memory/base.py` — MemoryManager 抽象接口
 
 **Current Blocker:** None
 
-**Next Step:** Create `core/channel/base.py` with `Channel` ABC (receive / send) + `Message` and `AgentResponse` dataclasses. Then implement `core/channel/cli.py` with `input()` / `print()`.
+**Next Step:** Create `core/memory/base.py` with `MemoryManager` ABC (add / get_context / store_long_term / recall_long_term). Then implement `core/memory/window.py` (deque, N turns) and `core/memory/long_term.py` (no-op stub).
 
 **Important Decisions:**
 1. LLM Client 采用单 provider + 环境变量模式，非多 provider YAML profile

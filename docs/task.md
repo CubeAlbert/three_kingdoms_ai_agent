@@ -2,7 +2,7 @@
 
 ## 🔥 当前任务
 
-Phase 1.4 — Channel 层 (`core/channel/base.py` + `cli.py`)
+Phase 1.5 — Memory 层 (`core/memory/base.py` + `window.py` + `long_term.py`)
 
 ---
 
@@ -40,9 +40,9 @@ Phase 1.4 — Channel 层 (`core/channel/base.py` + `cli.py`)
 - ⏸️ 待集成验证：设好环境变量后调通至少一个 provider 的 embed（当前 qwen2.5:7b 不支持 embedding 端点）
 
 ### 4. Channel 层
-- ⬜ `core/channel/base.py` — Channel 抽象基类 + Message / AgentResponse 数据类
-- ⬜ `core/channel/cli.py` — CliChannel 实现 (`input()` / `print()`)
-- ⬜ 验证：CliChannel 收发消息正常
+- ✅ `core/channel/base.py` — Channel 抽象基类 + Message / AgentResponse 数据类
+- ✅ `core/channel/cli.py` — CliChannel 实现 (`input()` / `print()`)
+- ✅ 验证：CliChannel 收发消息正常
 
 ### 5. Memory 层
 - ⬜ `core/memory/base.py` — MemoryManager 抽象接口
