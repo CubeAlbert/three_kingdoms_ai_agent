@@ -2,7 +2,7 @@
 
 ## 🔥 当前任务
 
-Phase 1.6 — RAG 系统 (`core/rag/embedder.py` + `store.py` + `router.py` + `data/memes.yaml`)
+Phase 1.7 — 子 Agent (`agents/base.py` + `recipe.py` + `chat.py` + `media.py`)
 
 ---
 
@@ -37,7 +37,7 @@ Phase 1.6 — RAG 系统 (`core/rag/embedder.py` + `store.py` + `router.py` + `d
 - ✅ `chat()` 新增 `json_mode` 参数 → 透传 `response_format={'type': 'json_object'}` 给 API，从服务端约束 JSON 输出
 - ✅ 验证：136 个单元测试通过 + 3 个集成测试通过（真实 DeepSeek API，含 json_mode 端到端验证）
 - ✅ 集成测试独立文件 `tests/core/llm/test_client_integration.py`，不 mock 环境变量
-- ⏸️ 待集成验证：设好环境变量后调通至少一个 provider 的 embed（当前 qwen2.5:7b 不支持 embedding 端点）
+- ✅ 集成验证：embedding provider 调通（`EMBED_*` 环境变量，4 个集成测试通过）
 
 ### 4. Channel 层
 - ✅ `core/channel/base.py` — Channel 抽象基类 + Message / AgentResponse 数据类
@@ -51,11 +51,18 @@ Phase 1.6 — RAG 系统 (`core/rag/embedder.py` + `store.py` + `router.py` + `d
 - ✅ 验证：38 个单元测试通过
 
 ### 6. RAG 系统
-- ⬜ `core/rag/embedder.py` — Embedder（封装 `llm.embed()`）
-- ⬜ `core/rag/store.py` — ChromaDB VectorStore（`add`, `search`, `count`）
-- ⬜ `core/rag/router.py` — Router（启动加载 memes.yaml → embed → store；运行时 `route(user_text) -> RouteResult | None`）
-- ⬜ `data/memes.yaml` — 从 `docs/meme.md` 提取生成（LLM 辅助或手动）
-- ⬜ 验证：RAG 搜索能正确匹配梗文本
+- ✅ `core/rag/embedder.py` — Embedder（LLMClient 薄封装）
+- ✅ `core/rag/store.py` — VectorStore ABC + **SqliteVecStore**（sqlite-vec，替代原设计 ChromaDB）
+- ✅ `core/rag/router.py` — Router + RouteResult（`from_config()` 工厂 + `route()` 运行时）
+- ✅ `data/memes.yaml` — 从 `docs/meme.md` 手动提取（25 条梗，3 个 Agent）
+- ✅ `core/config.py` — EmbedConfig 独立 embedding provider（`EMBED_*` 环境变量，fallback `LLM_*`）
+- ✅ `core/llm/client.py` — 双 OpenAI client（chat + embed 分离）
+- ✅ `embed_batch` 分批发送 + `embed_batch_size` 可配置
+- ✅ 验证：21 个单元测试 + 10 个集成测试通过（全量 208 tests pass）
+- ✅ `similarity_threshold` 调至 0.55（适配 text-embedding-v4 相似度分布）
+- 📝 设计变更：ChromaDB → sqlite-vec（零依赖、~300kB、单 .db 文件）
+- ⬜ `scripts/extract_memes.py` — 自动从 `docs/meme.md` 提取生成 `data/memes.yaml`（当前手动维护）
+- ✅ `.gitignore` 忽略 `data/memes.yaml`（生成文件，源为 `docs/meme.md`）
 
 ### 7. 子 Agent
 - ⬜ `agents/base.py` — BaseAgent + AgentContext + AgentResult

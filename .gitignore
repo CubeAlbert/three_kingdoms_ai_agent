@@ -55,8 +55,9 @@ htmlcov/
 .ruff_cache/
 *.log
 
-# ChromaDB data (generated at runtime)
-chroma_data/
+# RAG — generated at startup / build time
+data/memes.db
+data/memes.yaml
 
 # Claude Code
 .claude/plans/

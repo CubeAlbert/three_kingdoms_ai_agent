@@ -30,7 +30,7 @@ relevant section. Read 100 lines at a time until the section is complete.
 - [x] 3. LLM Client：chat + embed + Action + JSON parser（136 tests pass）
 - [x] 4. Channel 层：Channel 抽象 + CliChannel
 - [x] 5. Memory 层：MemoryManager 接口 + WindowMemory + LongTermMemory（空）
-- [ ] 6. RAG 系统：Embedder + ChromaDB Store + Router + memes.yaml
+- [x] 6. RAG 系统：Embedder + SqliteVecStore + Router + memes.yaml
 - [ ] 7. 子 Agent：BaseAgent + RecipeAgent + ChatAgent + MediaAgent
 - [ ] 8. Orchestrator：双模式 prompt 拼装 + 主循环 + template_render
 - [ ] 9. CLI 入口：`main.py` 组装所有模块 + 端到端验证
@@ -65,7 +65,7 @@ relevant section. Read 100 lines at a time until the section is complete.
 ### External
 
 - **DeepSeek API** (`api.deepseek.com`) — chat + embedding，当前使用中。需有效的 `DEEPSEEK_API_KEY` 环境变量。
-- **ChromaDB** — 向量存储。通过 pip 安装，无外部服务依赖（嵌入式模式）。
+- **ChromaDB** — ~~向量存储。通过 pip 安装，无外部服务依赖（嵌入式模式）。~~ **已替换为 sqlite-vec**（零依赖 SQLite 向量扩展，~300kB）。
 - **qwen2.5:7b (Ollama)** — embedding 备用方案。当前 Ollama 上 qwen2.5:7b 不支持 embedding 端点，待集成验证。
 
 ### Cross-cutting

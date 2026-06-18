@@ -281,27 +281,27 @@ class Channel(ABC):
 
 **Purpose:** 这是触发匹配的核心——解决"不同梗表达相同意图"的问题。
 
+> 📝 **已实现**: 最终采用 **sqlite-vec** 替代原始设计的 ChromaDB。理由：25-200 条梗的规模下 ChromaDB 的 200MB+ 依赖链（onnxruntime / grpcio / kubernetes / opentelemetry 等）完全浪费；sqlite-vec 零依赖、~300kB 单 wheel、单 `.db` 文件持久化。详见 `docs/decision.md`。
+
 **Sub-modules:**
 
 #### Embedder (`core/rag/embedder.py`)
-- 调用 LLM Client 的 embedding 接口
+- LLM Client 的薄封装，解耦 Router 与具体 embedding 后端
 - `embed(text: str) -> list[float]`
 - `embed_batch(texts: list[str]) -> list[list[float]]`
 
 #### Vector Store (`core/rag/store.py`)
-- 使用 **ChromaDB**，从 MVP 开始，支持持久化
-- 封装 Chroma collection，提供接口：
-  - `add(id, vector, metadata)` — 注册一条梗，metadata 含 `agent_id`、`sub_type`、原始台词
-  - `search(vector, top_k, threshold) -> list[Match]` — 相似度搜索
-  - `count() -> int` — 已注册梗数量
+- **VectorStore** ABC 定义接口：`add()` / `search()` / `count()` / `clear()`
+- **SqliteVecStore** 实现：基于 `sqlite-vec` 的 `vec0` virtual table
+  - 向量存在 `meme_vectors` (vec0)，metadata 在 `meme_metadata`，rowid 关联
+  - 向量表惰性创建：首次 `add()` 时根据实际向量维度建表
+  - `search()` 返回 `list[Match]`（含 `agent_id` / `sub_type` / `text` / `distance` / `similarity`）
+  - 阈值过滤在 Router 层做，Store 只负责检索 top_k
 
 #### Router (`core/rag/router.py`)
-- 启动时：加载 `data/memes.yaml` → embed 所有梗 → 存入 ChromaDB Store
-- 运行时：`route(user_text: str) -> Optional[RouteResult]`
-  1. embed 用户输入
-  2. 在 ChromaDB 中搜索最相似的梗
-  3. 如果相似度 > 阈值 → 从 metadata 取出 `agent_id` + `sub_type` + 原始台词，返回 `RouteResult`
-  4. 否则返回 None（没有命中梗，普通聊天）
+- `RouteResult` dataclass: `agent_id` / `sub_type` / `meme_text` / `similarity`
+- `from_config()` 工厂方法：加载 `data/memes.yaml` → embed 全部 → 入库（幂等：count > 0 则跳过）
+- `route(user_text)` 运行时方法：embed → search → 阈值过滤 → RouteResult 或 None
 - 路由完全确定性，不需要 LLM 参与
 
 ### 4.4 记忆管理

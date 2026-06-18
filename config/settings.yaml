@@ -7,8 +7,10 @@
 # RAG (vector search / meme matching)
 # ---------------------------------------------------------------------------
 rag:
-  similarity_threshold: 0.75   # Cosine similarity floor for a meme hit
+  similarity_threshold: 0.55   # Cosine similarity floor for a meme hit
   top_k: 3                     # Max matches to return per search
+  db_path: data/memes.db       # sqlite-vec vector store path
+  embed_batch_size: 10         # Max texts per embedding API call
 
 # ---------------------------------------------------------------------------
 # Memory

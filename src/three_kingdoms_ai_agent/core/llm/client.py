@@ -13,7 +13,7 @@ from openai import OpenAI
 
 from .action import Action
 from .parser import parse_structured
-from ..config import LLMConfig
+from ..config import EmbedConfig, LLMConfig
 
 # ---------------------------------------------------------------------------
 # Exception
@@ -80,7 +80,11 @@ class LLMClient:
         timeout: int = 60,
         max_retries: int = 3,
     ) -> None:
-        """Initialize the OpenAI SDK client.
+        """Initialize the OpenAI SDK client(s).
+
+        Creates a chat client from :class:`LLMConfig` and an embedding
+        client from :class:`EmbedConfig` (which may point to a different
+        provider — DeepSeek lacks an embedding API).
 
         Parameters
         ----------
@@ -93,13 +97,21 @@ class LLMClient:
         """
         self._config = config
 
-        # Ollama and other local providers don't need auth; the OpenAI SDK
-        # requires *some* api_key value though, so we pass a placeholder.
+        # Chat client
         api_key = config.api_key if config.auth_enabled else "ollama"
-
         self._client = OpenAI(
             base_url=config.base_url,
             api_key=api_key,
+            timeout=timeout,
+            max_retries=max_retries,
+        )
+
+        # Embedding client — may use a different provider
+        embed_cfg = config.embed
+        embed_key = embed_cfg.api_key if embed_cfg.auth_enabled else "ollama"
+        self._embed_client = OpenAI(
+            base_url=embed_cfg.base_url,
+            api_key=embed_key,
             timeout=timeout,
             max_retries=max_retries,
         )
@@ -186,8 +198,8 @@ class LLMClient:
             On any API or network failure.
         """
         try:
-            response = self._client.embeddings.create(
-                model=self._config.embed_model,
+            response = self._embed_client.embeddings.create(
+                model=self._config.embed.model,
                 input=text,
             )
         except Exception as exc:
@@ -216,8 +228,8 @@ class LLMClient:
             On any API or network failure.
         """
         try:
-            response = self._client.embeddings.create(
-                model=self._config.embed_model,
+            response = self._embed_client.embeddings.create(
+                model=self._config.embed.model,
                 input=texts,
             )
         except Exception as exc:

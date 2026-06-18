@@ -166,8 +166,9 @@ class TestLoadSettings:
 
     def test_rag_defaults(self, config_dir):
         settings = ConfigLoader(config_dir).load_settings()
-        assert settings.rag.similarity_threshold == 0.75
+        assert settings.rag.similarity_threshold == 0.55
         assert settings.rag.top_k == 3
+        assert settings.rag.embed_batch_size == 10
 
     def test_memory_defaults(self, config_dir):
         settings = ConfigLoader(config_dir).load_settings()

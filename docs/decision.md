@@ -16,6 +16,8 @@ directly to that section. No need to load the entire file.
 - [Decision 5 — 同步 vs 异步 I/O](#decision-5--同步-vs-异步-io)
 - [Decision 6 — 流式输出延后](#decision-6--流式输出延后)
 - [Decision 7 — json_mode 与 prompt 责任边界](#decision-7--json_mode-与-prompt-责任边界)
+- [Decision 8 — RAG 向量存储：ChromaDB → sqlite-vec](#decision-8--rag-向量存储chromadb--sqlite-vec)
+- [Decision 9 — Chat 与 Embedding provider 分离](#decision-9--chat-与-embedding-provider-分离)
 
 ---
 
@@ -112,3 +114,41 @@ directly to that section. No need to load the entire file.
 **Alternatives Considered:**
 - LLMClient 自动注入 JSON 提示 — 会与 Agent 的 role prompt 冲突，且无法知道目标 schema
 - 放弃 json_mode，纯靠 parser 修复 — parser 是兜底，服务端约束能显著提高 JSON 输出率
+
+---
+
+### Decision 8 — RAG 向量存储：ChromaDB → sqlite-vec
+
+**Context:** 原始设计使用 ChromaDB 做向量存储。实际梗语料规模仅 25 条（未来也不会超过 200 条），ChromaDB 的 200MB+ 依赖链（onnxruntime / grpcio / kubernetes / opentelemetry 等）在此规模下完全过度。实现前对替代方案做了系统调研。
+
+**Decision:** 采用 **sqlite-vec**（Alex Garcia 开发，MIT 协议，Mozilla Firefox 已内置）。VectorStore ABC 定义接口，SqliteVecStore 实现，未来换后端只需改 store.py。
+
+**Rationale:**
+- 安装体积：~300kB（单一预编译 wheel）vs ChromaDB 200-400MB
+- 零传递依赖 — 仅需 Python stdlib `sqlite3`
+- 单 `.db` 文件持久化，调试友好（任意 SQLite GUI 可打开）
+- 25-200 向量规模下，暴力搜索已亚毫秒级，ChromaDB 的 HNSW 索引无收益
+- 可与 SQLite FTS5 组合做混合搜索（向量 + 关键词），未来扩展空间大
+
+**Alternatives Considered:**
+- ChromaDB（原设计）— 在 25 条规模下过度设计，已知内存泄漏 bug
+- numpy 暴力搜索 — 更简单但需手写持久化，不如 sqlite-vec 开箱即用
+- FAISS + SQLite — FAISS 构建依赖复杂，跨平台分发差
+
+---
+
+### Decision 9 — Chat 与 Embedding provider 分离
+
+**Context:** DeepSeek API 不支持 `/v1/embeddings` 端点（经 PowerShell 脚本实测确认 404）。Chat 走 DeepSeek，但 embedding 需要另一个 provider（如阿里云 DashScope text-embedding-v4）。
+
+**Decision:** 新增 `EmbedConfig` 数据类，读取独立的 `EMBED_*` 环境变量（`EMBED_BASE_URL` / `EMBED_API_KEY` / `EMBED_MODEL` / `EMBED_AUTH_ENABLED`），未设时 fallback 到对应的 `LLM_*` 值。`LLMClient.__init__` 创建两个 `OpenAI` 实例：`self._client`（chat）和 `self._embed_client`（embedding）。
+
+**Rationale:**
+- 关注点分离 — chat 和 embedding 是不同的后端需求
+- fallback 机制保持向后兼容（单 provider 场景无需额外配置）
+- `LLMConfig.embed` 属性对上层透明，Router 无需感知
+
+**Alternatives Considered:**
+- 单 client + 运行时切换 base_url — Openai SDK 不支持 per-request 切换
+- 全部切到支持 embedding 的 provider — 限制 provider 选择自由
+- 本地 Ollama 做 embedding — 增加运维复杂度，且用户已有 cloud embedding provider

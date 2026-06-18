@@ -14,7 +14,6 @@ from three_kingdoms_ai_agent.core.config import (
     ENV_LLM_API_KEY,
     ENV_LLM_AUTH_ENABLED,
     ENV_LLM_BASE_URL,
-    ENV_LLM_EMBED_MODEL,
     ENV_LLM_MODEL,
     LLMConfig,
 )
@@ -198,13 +197,13 @@ class TestLLMClientEmbed:
         mock_response = MagicMock()
         mock_response.data = [mock_data]
 
-        with patch.object(client._client.embeddings, "create", return_value=mock_response):
+        with patch.object(client._embed_client.embeddings, "create", return_value=mock_response):
             result = client.embed("测试")
             assert result == [0.1, 0.2, 0.3]
 
     def test_embed_raises_llm_error_on_failure(self, client):
         with patch.object(
-            client._client.embeddings,
+            client._embed_client.embeddings,
             "create",
             side_effect=Exception("Timeout"),
         ):
@@ -212,13 +211,13 @@ class TestLLMClientEmbed:
                 client.embed("test")
 
     def test_embed_uses_embed_model(self, client):
-        client._config.embed_model = "text-embedding-3-small"
+        client._config.embed.model = "text-embedding-3-small"
         mock_data = MagicMock()
         mock_data.embedding = [1.0]
         mock_response = MagicMock()
         mock_response.data = [mock_data]
 
-        with patch.object(client._client.embeddings, "create", return_value=mock_response) as mock_create:
+        with patch.object(client._embed_client.embeddings, "create", return_value=mock_response) as mock_create:
             client.embed("text")
             assert mock_create.call_args.kwargs["model"] == "text-embedding-3-small"
 
@@ -244,7 +243,7 @@ class TestLLMClientEmbedBatch:
         mock_response = MagicMock()
         mock_response.data = [mock_data_0, mock_data_1]
 
-        with patch.object(client._client.embeddings, "create", return_value=mock_response):
+        with patch.object(client._embed_client.embeddings, "create", return_value=mock_response):
             result = client.embed_batch(["text one", "text two"])
             assert result == [[0.1, 0.2], [0.3, 0.4]]
 
@@ -261,13 +260,13 @@ class TestLLMClientEmbedBatch:
         mock_response = MagicMock()
         mock_response.data = [mock_data_1, mock_data_0]  # reversed!
 
-        with patch.object(client._client.embeddings, "create", return_value=mock_response):
+        with patch.object(client._embed_client.embeddings, "create", return_value=mock_response):
             result = client.embed_batch(["text one", "text two"])
             assert result == [[0.1, 0.2], [0.3, 0.4]]
 
     def test_embed_batch_raises_llm_error(self, client):
         with patch.object(
-            client._client.embeddings,
+            client._embed_client.embeddings,
             "create",
             side_effect=Exception("API error"),
         ):

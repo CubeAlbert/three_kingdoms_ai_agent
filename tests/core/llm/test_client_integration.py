@@ -5,8 +5,13 @@ Run with::
     pytest tests/core/llm/test_client_integration.py -v -s
 
 Prerequisites:
-    LLM_BASE_URL, LLM_MODEL, LLM_AUTH_ENABLED (and LLM_API_KEY if auth needed)
-    must be set in the environment.
+
+    Chat:
+        LLM_BASE_URL, LLM_MODEL, LLM_AUTH_ENABLED (and LLM_API_KEY if auth needed)
+
+    Embedding:
+        EMBED_BASE_URL, EMBED_MODEL, EMBED_AUTH_ENABLED (and EMBED_API_KEY if auth needed)
+        — each falls back to its LLM_* counterpart when unset.
 """
 
 from __future__ import annotations
@@ -35,6 +40,14 @@ def _make_client() -> LLMClient:
     if not config.base_url:
         pytest.skip("LLM_BASE_URL not set — skipping integration test")
     return LLMClient(config)
+
+
+def _require_embed_config(config: LLMConfig) -> None:
+    """Skip the test if the embedding provider is not configured."""
+    if not config.embed.base_url:
+        pytest.skip("EMBED_BASE_URL (or LLM_BASE_URL) not set — skipping embedding test")
+    if not config.embed.model:
+        pytest.skip("EMBED_MODEL (or LLM_MODEL) not set — skipping embedding test")
 
 
 # ---------------------------------------------------------------------------
@@ -101,3 +114,78 @@ class TestChatIntegration:
         )
         assert result.action.type == ActionType.SWITCH
         assert result.action.target is not None
+
+
+# ---------------------------------------------------------------------------
+# Embedding
+# ---------------------------------------------------------------------------
+
+
+class TestEmbeddingIntegration:
+    """Integration tests for LLMClient embedding — requires EMBED_* env vars."""
+
+    def test_embed_returns_valid_vector(self):
+        """embed() should return a non-empty list of floats."""
+        client = _make_client()
+        _require_embed_config(client._config)
+
+        vec = client.embed("你好，测试一下")
+        assert isinstance(vec, list)
+        assert len(vec) > 0
+        assert all(isinstance(v, float) for v in vec)
+
+    def test_embed_batch_preserves_order_and_count(self):
+        """embed_batch() should return one vector per input, in order."""
+        client = _make_client()
+        _require_embed_config(client._config)
+
+        texts = ["当浮一大白", "天意", "关羽之歌"]
+        vecs = client.embed_batch(texts)
+
+        assert len(vecs) == 3
+        for i, vec in enumerate(vecs):
+            assert isinstance(vec, list), f"vec[{i}] is not a list"
+            assert len(vec) > 0, f"vec[{i}] is empty"
+            assert all(isinstance(v, float) for v in vec), f"vec[{i}] has non-float"
+
+    def test_embed_batch_vectors_are_same_dimension(self):
+        """All vectors returned by embed_batch() should have the same dimension."""
+        client = _make_client()
+        _require_embed_config(client._config)
+
+        texts = ["a", "b", "c"]
+        vecs = client.embed_batch(texts)
+
+        dims = {len(v) for v in vecs}
+        assert len(dims) == 1, f"Expected uniform dimension, got {dims}"
+
+    def test_similar_texts_closer_than_dissimilar(self):
+        """Semantically similar texts should have higher cosine similarity
+        than clearly unrelated ones."""
+        client = _make_client()
+        _require_embed_config(client._config)
+
+        # Texts that are clearly about the same topic
+        topic_a = "我想喝酒"       # I want to drink
+        topic_b = "来一杯好酒"     # Pour a good drink
+        unrelated = "计算机编程语言"  # Programming languages — clearly different
+
+        vecs = client.embed_batch([topic_a, topic_b, unrelated])
+        v1, v2, v3 = vecs
+
+        # Dot product on (approximately) L2-normalized embedding vectors
+        def cos_sim(a, b):
+            return sum(x * y for x, y in zip(a, b))
+
+        sim_same_topic = cos_sim(v1, v2)
+        sim_cross_a = cos_sim(v1, v3)
+        sim_cross_b = cos_sim(v2, v3)
+
+        assert sim_same_topic > sim_cross_a, (
+            f"Same-topic sim ({sim_same_topic:.4f}) "
+            f"> cross-topic sim A ({sim_cross_a:.4f})"
+        )
+        assert sim_same_topic > sim_cross_b, (
+            f"Same-topic sim ({sim_same_topic:.4f}) "
+            f"> cross-topic sim B ({sim_cross_b:.4f})"
+        )
