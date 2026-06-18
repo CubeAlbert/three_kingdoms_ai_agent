@@ -2,7 +2,7 @@
 
 ## 🔥 当前任务
 
-Phase 1.5 — Memory 层 (`core/memory/base.py` + `window.py` + `long_term.py`)
+Phase 1.6 — RAG 系统 (`core/rag/embedder.py` + `store.py` + `router.py` + `data/memes.yaml`)
 
 ---
 
@@ -45,9 +45,10 @@ Phase 1.5 — Memory 层 (`core/memory/base.py` + `window.py` + `long_term.py`)
 - ✅ 验证：CliChannel 收发消息正常
 
 ### 5. Memory 层
-- ⬜ `core/memory/base.py` — MemoryManager 抽象接口
-- ⬜ `core/memory/window.py` — WindowMemory（`collections.deque`，保留最近 N 轮）
-- ⬜ `core/memory/long_term.py` — LongTermMemory（空实现，接口完整）
+- ✅ `core/memory/base.py` — MemoryManager 抽象接口
+- ✅ `core/memory/window.py` — WindowMemory（`collections.deque`，保留最近 N 轮）
+- ✅ `core/memory/long_term.py` — LongTermMemory（空实现，接口完整）
+- ✅ 验证：38 个单元测试通过
 
 ### 6. RAG 系统
 - ⬜ `core/rag/embedder.py` — Embedder（封装 `llm.embed()`）

@@ -2,13 +2,13 @@
 
 **Current Phase:** Phase 1 — MVP
 
-**Current Task:** 5. Memory 层 (`core/memory/`)
+**Current Task:** 6. RAG 系统 (`core/rag/`)
 
-**Current SubTask:** `core/memory/base.py` — MemoryManager 抽象接口
+**Current SubTask:** `core/rag/embedder.py` — Embedder 封装
 
 **Current Blocker:** None
 
-**Next Step:** Create `core/memory/base.py` with `MemoryManager` ABC (add / get_context / store_long_term / recall_long_term). Then implement `core/memory/window.py` (deque, N turns) and `core/memory/long_term.py` (no-op stub).
+**Next Step:** Create `core/rag/embedder.py` (encapsulate `llm.embed()`), then `core/rag/store.py` (ChromaDB VectorStore), `core/rag/router.py` (startup load + runtime route), and `data/memes.yaml`.
 
 **Important Decisions:**
 1. LLM Client 采用单 provider + 环境变量模式，非多 provider YAML profile

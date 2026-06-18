@@ -28,8 +28,8 @@ relevant section. Read 100 lines at a time until the section is complete.
 - [x] 1. 项目骨架：pyproject.toml、目录结构、依赖声明
 - [x] 2. 配置层：`config/llm.yaml` + `config/settings.yaml` + ConfigLoader
 - [x] 3. LLM Client：chat + embed + Action + JSON parser（136 tests pass）
-- [ ] 4. Channel 层：Channel 抽象 + CliChannel ← **当前任务**
-- [ ] 5. Memory 层：MemoryManager 接口 + WindowMemory + LongTermMemory（空）
+- [x] 4. Channel 层：Channel 抽象 + CliChannel
+- [x] 5. Memory 层：MemoryManager 接口 + WindowMemory + LongTermMemory（空）
 - [ ] 6. RAG 系统：Embedder + ChromaDB Store + Router + memes.yaml
 - [ ] 7. 子 Agent：BaseAgent + RecipeAgent + ChatAgent + MediaAgent
 - [ ] 8. Orchestrator：双模式 prompt 拼装 + 主循环 + template_render
