@@ -2,7 +2,7 @@
 
 ## 🔥 当前任务
 
-Phase 1.7 — 子 Agent (`agents/base.py` + `recipe.py` + `chat.py` + `media.py`)
+Phase 1.7 — 子 Agent (`chat.py` + `media.py`)
 
 ---
 
@@ -65,8 +65,8 @@ Phase 1.7 — 子 Agent (`agents/base.py` + `recipe.py` + `chat.py` + `media.py`
 - ✅ `.gitignore` 忽略 `data/memes.yaml`（生成文件，源为 `docs/meme.md`）
 
 ### 7. 子 Agent
-- ⬜ `agents/base.py` — BaseAgent + AgentContext + AgentResult
-- ⬜ `agents/recipe.py` — RecipeAgent（"吃什么" / "喝什么"）
+- ✅ `agents/base.py` — BaseAgent + AgentContext + AgentResult
+- ✅ `agents/recipe.py` — RecipeAgent（"吃什么" / "喝什么"）
 - ⬜ `agents/chat.py` — ChatAgent（"废话文学" / "哲理名言" / "与实不符"）
 - ⬜ `agents/media.py` — MediaAgent（"关羽之歌" / "折棒吐槽"）
 

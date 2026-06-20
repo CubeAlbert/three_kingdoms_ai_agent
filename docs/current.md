@@ -2,13 +2,13 @@
 
 **Current Phase:** Phase 1 — MVP
 
-**Current Task:** 7. 子 Agent (`agents/base.py` + `recipe.py` + `chat.py` + `media.py`)
+**Current Task:** 7. 子 Agent (`chat.py` + `media.py`)
 
-**Current SubTask:** `agents/base.py` — BaseAgent + AgentContext + AgentResult
+**Current SubTask:** `agents/chat.py` — ChatAgent（"废话文学" / "哲理名言" / "与实不符"）
 
 **Current Blocker:** None
 
-**Next Step:** Implement `agents/base.py` (BaseAgent with three-layer prompt assembly + json_mode support), then `agents/recipe.py`, `agents/chat.py`, `agents/media.py`.
+**Next Step:** Implement `agents/chat.py` (ChatAgent), then `agents/media.py` (MediaAgent).
 
 **Important Decisions:**
 1. LLM Client 采用单 provider + 环境变量模式，非多 provider YAML profile
