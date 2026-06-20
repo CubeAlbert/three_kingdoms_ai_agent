@@ -200,9 +200,17 @@ class Orchestrator:
 
             if route_result is not None:
                 # HIT — sub-agent → structured result → template render
+                logger.info(
+                    "RAG HIT | agent=%s sub_type=%s similarity=%.3f meme=%r",
+                    route_result.agent_id,
+                    route_result.sub_type,
+                    route_result.similarity,
+                    route_result.meme_text,
+                )
                 response_text = self._handle_hit(route_result, msg.text)
             else:
                 # MISS — persona + chat rules + LLM (no json_mode)
+                logger.info("RAG MISS — using chat mode")
                 response_text = self._handle_miss(msg.text)
 
             # --- memory + respond ----------------------------------------------
@@ -235,6 +243,7 @@ class Orchestrator:
         )
 
         try:
+            logger.info("Switching to sub-agent: %s (sub_type=%s)", agent.name, route.sub_type)
             result = agent.handle(ctx)
         except Exception:
             logger.exception(

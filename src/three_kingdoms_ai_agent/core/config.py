@@ -21,6 +21,12 @@ import yaml
 _ENV_PATTERN = re.compile(r"\$\{(\w+)\}")
 
 
+def _is_debug_env() -> bool:
+    """Return ``True`` when the ``DEBUG`` env var is truthy."""
+    val = os.environ.get("DEBUG", "").strip().lower()
+    return val in ("true", "1")
+
+
 def _substitute_env(text: str) -> str:
     """Replace ``${ENV_VAR}`` patterns with ``os.environ`` values.
 
@@ -266,12 +272,19 @@ class ConfigLoader:
     # -- public API ----------------------------------------------------------
 
     def load_settings(self) -> Settings:
-        """Load ``settings.yaml`` and return a typed :class:`Settings`."""
+        """Load ``settings.yaml`` and return a typed :class:`Settings`.
+
+        The ``debug`` flag is ``True`` when **either** ``settings.yaml``
+        has ``debug: true`` **or** the ``DEBUG`` environment variable is
+        set to a truthy value (``"true"`` / ``"1"``).
+        """
         raw = _load_yaml(self._config_dir / "settings.yaml")
         raw = _substitute_dict(raw)
 
         rag_raw = raw.get("rag", {})
         memory_raw = raw.get("memory", {})
+
+        debug = bool(raw.get("debug", False)) or _is_debug_env()
 
         return Settings(
             rag=RAGSettings(
@@ -285,7 +298,7 @@ class ConfigLoader:
             memory=MemorySettings(
                 window_size=int(memory_raw.get("window_size", 10)),
             ),
-            debug=bool(raw.get("debug", False)),
+            debug=debug,
         )
 
     def load_llm_options(self) -> dict[str, Any]:

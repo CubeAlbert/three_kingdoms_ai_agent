@@ -22,6 +22,10 @@ if "%LLM_BASE_URL%"=="" set LLM_BASE_URL=https://api.deepseek.com/v1
 if "%LLM_AUTH_ENABLED%"=="" set LLM_AUTH_ENABLED=true
 if "%LLM_MODEL%"=="" set LLM_MODEL=deepseek-chat
 
+REM ---- Debug mode (optional) ----
+REM   set DEBUG=true   -> show RAG hits/misses, agent switches, init details
+REM   set DEBUG=false  -> quiet mode (default)
+
 REM ---- Embedding Provider (optional, falls back to LLM provider) ----
 REM DeepSeek has no embedding API; use a separate provider.
 REM Example (Volcengine):

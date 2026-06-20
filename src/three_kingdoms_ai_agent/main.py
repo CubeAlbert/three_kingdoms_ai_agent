@@ -22,13 +22,22 @@ from .core.rag.router import Router
 def main() -> None:
     """Bootstrap the application and enter the conversation loop."""
 
+    # -- config ----------------------------------------------------------------
+    loader = ConfigLoader()
+    settings = loader.load_settings()
+    llm_opts = loader.load_llm_options()
+
     # -- logging ---------------------------------------------------------------
+    log_level = logging.INFO if settings.debug else logging.WARNING
     logging.basicConfig(
-        level=logging.WARNING,
+        level=log_level,
         format="%(levelname)s | %(name)s | %(message)s",
     )
+    logger = logging.getLogger(__name__)
+    if settings.debug:
+        logger.info("Debug mode ON (set DEBUG=false to disable)")
 
-    # -- config ----------------------------------------------------------------
+    # -- LLM config (env vars) --------------------------------------------------
     print("⚙️  加载配置...")
     try:
         llm_cfg = LLMConfig.from_env()
@@ -50,10 +59,6 @@ def main() -> None:
         for issue in embed_issues:
             print(f"   - {issue}")
 
-    loader = ConfigLoader()
-    settings = loader.load_settings()
-    llm_opts = loader.load_llm_options()
-
     # -- LLM client ------------------------------------------------------------
     print("🔌 连接 LLM...")
     llm_client = LLMClient(
@@ -66,6 +71,13 @@ def main() -> None:
     print("🧠 加载梗知识库...")
     try:
         router = Router.from_config(llm_client, settings)
+        if settings.debug:
+            logger.info(
+                "RAG initialized: threshold=%.2f top_k=%d db=%s",
+                settings.rag.similarity_threshold,
+                settings.rag.top_k,
+                settings.rag.db_path,
+            )
     except Exception as exc:
         print(f"⚠️  RAG 路由初始化失败（将继续以纯聊天模式运行）: {exc}")
         # Create a dummy router that always returns None
@@ -85,6 +97,12 @@ def main() -> None:
     agents = {
         "recipe_agent": RecipeAgent(),
     }
+    if settings.debug:
+        logger.info(
+            "Registered %d agent(s): %s",
+            len(agents),
+            ", ".join(f"{a.name} ({a.description})" for a in agents.values()),
+        )
 
     # -- channel + orchestrator ------------------------------------------------
     channel = CliChannel(prompt="🗣️  ")
