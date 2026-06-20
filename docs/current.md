@@ -22,3 +22,4 @@
 9. Orchestrator 双模式：Hit → 子Agent（1次LLM）+ 模板拼装（确定性）；Miss → Persona + Chat Rules + LLM（1次LLM, json_mode=False）
 10. 模板注册机制：per-agent 模板 callable（agent_id → fn），Orchestrator 构造时注入，未注册 fallback 到通用模板
 11. Hit 路径异常容错：子Agent 崩溃 / 未注册 → 自动 fallback 到 Miss 聊天模式
+12. Debug 日志：`DEBUG` 环境变量（`true`/`1`）控制 INFO 级别日志，输出 RAG 命中/切换/子Agent 切换全链路信息；`settings.yaml` 的 `debug: true` 等效

@@ -81,6 +81,8 @@ Phase 1 — MVP 核心链路已闭环（CLI → Orchestrator → RAG → SubAgen
 ### 9. CLI 入口
 - ✅ `main.py` — 组装所有模块、启动 CLI 对话循环
 - ✅ 端到端测试通过（Hit: 用户 → RAG → 子Agent → 模板拼装 / Miss: 用户 → RAG → LLM 聊天）
+- ✅ `scripts/run.bat` — Windows 启动脚本（UTF-8 BOM + CRLF 编码修正 + DEBUG 开关说明）
+- ✅ Debug logging — `DEBUG` 环境变量控制 INFO 日志输出（RAG 命中/切换/切换子Agent 全链路可见）
 
 ---
 
@@ -100,16 +102,14 @@ Phase 1 — MVP 核心链路已闭环（CLI → Orchestrator → RAG → SubAgen
 - 失败静默返回 None — 是否需要日志/计数器
 - 详见 plan 文件 `TODO 2`
 
-### ⬜ TODO：json_mode 的 prompt 拼接
+### ✅ TODO：json_mode 的 prompt 拼接（已完成）
 
 `json_mode=True` 要求 prompt 中必须包含 "json" 字样 + JSON 结构示例，否则 API 返回 400。这项责任在**调用方**——即 `BaseAgent.handle()` 的三层 prompt 拼装。
 
-**待做：**
+**已完成：**
 
-- [ ] `agents/base.py` — System Prompt 模板需内嵌 "json" 关键字和目标 Action JSON 结构示例
-- [ ] `agents/base.py` — `handle()` 调用 `llm.chat()` 时传入 `json_mode=True`
-- [ ] 各子 Agent 的 `system_prompt` 和 `sub_type_prompts` 需遵循 JSON 输出约定
-- [ ] Orchestrator 的聊天模式（RAG miss）**不**开 json_mode（自由对话）
-- [ ] 验证：`LLMClient.chat(json_mode=True)` + 合规 prompt → API 不报 400 → 返回结构化 Action
-
-**为什么需要这个：** DeepSeek 不支持 `json_schema` 类型，只能通过 `response_format={'type': 'json_object'}` + prompt 示例来约束输出结构。没有 prompt 配合，json_mode 形同虚设。
+- [x] `agents/base.py` — System Prompt 内嵌 "json" 关键字 + `_JSON_FALLBACK_SUFFIX` 兜底
+- [x] `agents/base.py` — `handle()` 调用 `llm.chat()` 时传入 `json_mode=True`
+- [x] 各子 Agent 的 `system_prompt` 和 `sub_type_prompts` 遵循 JSON 输出约定（RecipeAgent 已验证）
+- [x] Orchestrator 的聊天模式（RAG miss）不开 json_mode（自由对话）
+- [x] 验证：41 个 agent 单元测试 + 39 个 orchestrator 单元测试全部通过

@@ -196,6 +196,9 @@ three_kingdoms_ai_agent/
 │   └── llm.yaml                   # LLM 后端 + Embedding 模型配置
 │
 ├── docs/                          # 已有文档目录
+├── scripts/
+│   ├── test_embed.ps1              # Embedding API 端点测试
+│   └── run.bat                     # Windows 启动脚本（UTF-8 + CRLF）
 ├── tests/
 ├── pyproject.toml
 └── requirements.txt
@@ -386,6 +389,12 @@ loop:
 - 命中时最多 1 次 LLM 调用（子 Agent），结果整合不用 LLM
 - 未命中时 1 次 LLM 调用（聊天）
 - 路由判断 RAG 确定性完成，不调 LLM
+
+> 📝 **已实现差异**:
+> - **同步 I/O**：原始设计使用 `async/await`，实际实现为同步（与 Phase 1 其余模块一致）。
+> - **模板渲染**：非单一 `INTEGRATION_RULES` 字符串，而是 `agent_id → callable` 字典。每个子 Agent 一个模板函数（如 `_recipe_template`），构造时注入自定义覆盖，未注册走 `_fallback_template`。
+> - **Hit 容错**：子 Agent 未注册 / `handle()` 抛异常 → 自动 fallback 到 Miss 聊天模式，不中断对话。
+> - **Debug 日志**：`DEBUG` 环境变量或 `settings.yaml` 的 `debug: true` 控制 `logging.INFO` 级别输出，RAG 命中/未命中、子 Agent 切换全链路可见。
 
 ### 4.6 子 Agent 基类
 

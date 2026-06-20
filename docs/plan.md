@@ -31,9 +31,9 @@ relevant section. Read 100 lines at a time until the section is complete.
 - [x] 4. Channel 层：Channel 抽象 + CliChannel
 - [x] 5. Memory 层：MemoryManager 接口 + WindowMemory + LongTermMemory（空）
 - [x] 6. RAG 系统：Embedder + SqliteVecStore + Router + memes.yaml
-- [ ] 7. 子 Agent：BaseAgent + RecipeAgent + ChatAgent + MediaAgent
-- [ ] 8. Orchestrator：双模式 prompt 拼装 + 主循环 + template_render
-- [ ] 9. CLI 入口：`main.py` 组装所有模块 + 端到端验证
+- [/] 7. 子 Agent：BaseAgent + RecipeAgent ✅ / ChatAgent ⬜ / MediaAgent ⬜
+- [x] 8. Orchestrator：双模式 prompt 拼装 + 主循环 + template_render + Debug 日志
+- [x] 9. CLI 入口：`main.py` 组装所有模块 + `scripts/run.bat` + 端到端验证
 
 ### Milestone 2 — 增强（后续）
 
