@@ -2,7 +2,9 @@
 
 ## 🔥 当前任务
 
-Phase 1.7 — 子 Agent (`chat.py` + `media.py`)
+Phase 1 — MVP 核心链路已闭环（CLI → Orchestrator → RAG → SubAgent → 模板渲染 ✅）
+
+剩余子 Agent：`chat.py` + `media.py`
 
 ---
 
@@ -71,13 +73,14 @@ Phase 1.7 — 子 Agent (`chat.py` + `media.py`)
 - ⬜ `agents/media.py` — MediaAgent（"关羽之歌" / "折棒吐槽"）
 
 ### 8. Orchestrator
-- ⬜ `core/orchestrator.py` — Persona 定义 + 双模式 prompt 拼装 + 主循环
-- ⬜ Persona / Chat Rules / Integration Rules 的 prompt 内容编写
-- ⬜ `template_render()` — 子 Agent 结构化结果 → 自然语言模板拼装（确定性）
+- ✅ `core/orchestrator.py` — Persona + Chat Rules + 双模式（Hit 模板拼装 / Miss LLM 聊天） + 主循环
+- ✅ Persona / Chat Rules / Integration Rules prompt 内容编写
+- ✅ `template_render()` — 子 Agent 结构化结果 → 自然语言模板拼装（确定性，per-agent 模板注册）
+- ✅ 39 个单元测试通过
 
 ### 9. CLI 入口
-- ⬜ `main.py` — 组装所有模块、启动 CLI 对话循环
-- ⬜ 端到端验证：发一句梗 → RAG 命中 → 子 Agent 三层拼装 → 结果整合返回
+- ✅ `main.py` — 组装所有模块、启动 CLI 对话循环
+- ✅ 端到端测试通过（Hit: 用户 → RAG → 子Agent → 模板拼装 / Miss: 用户 → RAG → LLM 聊天）
 
 ---
 
