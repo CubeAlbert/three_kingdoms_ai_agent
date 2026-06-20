@@ -2,9 +2,9 @@
 
 ## 🔥 当前任务
 
-Phase 1 — MVP 核心链路已闭环（CLI → Orchestrator → RAG → SubAgent → 模板渲染 ✅）
+Phase 1 — MVP 核心链路已闭环，全部 3 个子 Agent 已实现（recipe ✅ + chat ✅ + media ✅）
 
-剩余子 Agent：`chat.py` + `media.py`
+下一步：端到端验证 chat_agent / media_agent 的 RAG 命中 + 对话流程
 
 ---
 
@@ -69,8 +69,12 @@ Phase 1 — MVP 核心链路已闭环（CLI → Orchestrator → RAG → SubAgen
 ### 7. 子 Agent
 - ✅ `agents/base.py` — BaseAgent + AgentContext + AgentResult
 - ✅ `agents/recipe.py` — RecipeAgent（"吃什么" / "喝什么"）
-- ⬜ `agents/chat.py` — ChatAgent（"废话文学" / "哲理名言" / "与实不符"）
-- ⬜ `agents/media.py` — MediaAgent（"关羽之歌" / "折棒吐槽"）
+- ✅ `agents/chat.py` — ChatAgent（"废话文学" / "哲理名言" / "与实不符"）。纯对话式 Agent，override handle() 用 json_mode=False，自由聊天。
+- ✅ `agents/media.py` — MediaAgent（"关羽之歌" / "折棒吐槽"）。当前对话式（MVP），override handle() 用 json_mode=False；后续扩展链接打开/音乐播放。
+- ⏸️ `tests/agents/test_chat.py` — ChatAgent 单元测试（待 prompt 稳定后再写）
+- ⏸️ `tests/agents/test_media.py` — MediaAgent 单元测试（待 prompt 稳定后再写）
+- ⏸️ 单元测试：三个 sub-agent（recipe/chat/media）功能与 prompt 后续需修改，暂不写测试
+- ⬜ 端到端验证：启动 CLI，实测 chat_agent + media_agent 的 RAG 命中 → 对话流程
 
 ### 8. Orchestrator
 - ✅ `core/orchestrator.py` — Persona + Chat Rules + 双模式（Hit 模板拼装 / Miss LLM 聊天） + 主循环
@@ -87,6 +91,26 @@ Phase 1 — MVP 核心链路已闭环（CLI → Orchestrator → RAG → SubAgen
 ---
 
 ## 笔记 / 踩坑记录
+
+### 🐛 已修复：对话式 Agent 误输出 JSON（2026-06-20）
+
+**症状**：ChatAgent 输出 `{"content": "..."}` 而非纯文本。
+
+**根因**：`BaseAgent._assemble_system_prompt()` 检测 prompt 不含 "json" 就追
+加 `_JSON_FALLBACK_SUFFIX`（"You MUST respond with a valid JSON object."）。
+ChatAgent/MediaAgent 的 system_prompt 不含 "json"（它们是对话式的），但
+`_build_messages()` 由 BaseAgent 统一调用，导致 fallback 被注入 prompt。
+即使 `json_mode=False`，LLM 也被 prompt 引导输出了 JSON。
+
+**修复**：JSON fallback 从 `_assemble_system_prompt()`（所有 Agent 共享）
+移到 `BaseAgent.handle()`（仅 `json_mode=True` 的结构化 Agent 触发）。
+对话式 Agent override `handle()` 不受影响。
+
+### 📝 设计决策：对话式 Agent 用 json_mode=False
+
+ChatAgent 和 MediaAgent 是纯对话式 Agent，override `handle()` 使用 `json_mode=False`（而非 BaseAgent 默认的 `json_mode=True`），直接返回自由文本。`data={"response": raw_content}` 供模板透传。
+
+模板 `_chat_template` / `_media_template` 直接透传 LLM 回复（不做军师包装），因为对话式 Agent 自身已在角色中。
 
 ### ⏸️ 待讨论：ActionType 扩展与重构
 - 当前三种（switch/exit/tool），后续需审视频繁新增

@@ -36,7 +36,7 @@ entire file at once unless it is short.
 | 环节 | 方式 | 手段 |
 |------|------|------|
 | RAG 路由 | ✅ 确定性 | 余弦相似度 + 阈值 |
-| Agent + SubType 选择 | ✅ 确定性 | Chroma metadata（agent_id, sub_type） |
+| Agent + SubType 选择 | ✅ 确定性 | sqlite-vec metadata（agent_id, sub_type） |
 | 子 Agent Prompt 选择 | ✅ 确定性 | `sub_type → prompt` 字典映射 |
 | 子 Agent 内容生成 | ⚠️ LLM | 不可避免，用结构化输出约束 |
 | 结果整合呈现 | ✅ 确定性 | 模板拼接，子 Agent 返回结构化数据 |
@@ -91,10 +91,11 @@ Orchestrator 的 LLM 用于两种互斥场景：
 场景 A：RAG 未命中 → 聊天模式
   prompt = Persona + Chat Rules + User Message
 
-场景 B：RAG 命中 → 结果整合模式
+场景 B：RAG 命中 → 子 Agent + 模板拼装
   # RAG 已确定 agent_id + sub_type，不需要 LLM 做路由判断
-  result = sub_agent.handle(ctx)    # 子 Agent 返回结构化数据
-  prompt = Persona + Integration Rules + result + User Message
+  # 子 Agent 返回结构化数据，Orchestrator 用模板确定性拼装（不调 LLM）
+  result = sub_agent.handle(ctx)    # 子 Agent 返回结构化数据（一次 LLM）
+  response = template_render(result)  # 模板确定性拼装（零 LLM）
 ```
 
 - **路由硬逻辑归 RAG**（确定性，余弦相似度 + 阈值）
@@ -129,7 +130,7 @@ Orchestrator 的 LLM 用于两种互斥场景：
 ### 梗知识管线
 
 ```
-docs/meme.md  ──(LLM extraction)──▶  data/memes.yaml  ──(embed)──▶  ChromaDB
+docs/meme.md  ──(LLM extraction)──▶  data/memes.yaml  ──(embed)──▶  sqlite-vec
      (human-authored)                        (machine-readable)              (vector store)
                                               with metadata:
                                               agent_id, sub_type, text
@@ -168,7 +169,7 @@ three_kingdoms_ai_agent/
 │   │   ├── rag/
 │   │   │   ├── __init__.py
 │   │   │   ├── embedder.py        # Embedding 生成（调用 embedding 模型）
-│   │   │   ├── store.py           # 向量存储（ChromaDB）
+│   │   │   ├── store.py           # 向量存储（sqlite-vec）
 │   │   │   └── router.py          # 梗匹配路由：embed → search → 命中Agent
 │   │   ├── memory/
 │   │   │   ├── __init__.py
@@ -370,7 +371,7 @@ loop:
        # 命中梗 → 调用子 Agent（一次 LLM）
        ctx = AgentContext(
          user_message=msg.text,
-         sub_type=route_result.sub_type,    # 确定性，来自 Chroma metadata
+         sub_type=route_result.sub_type,    # 确定性，来自 sqlite-vec metadata
          matched_meme=route_result.meme_text,
          history=await memory.get_context(),
          llm=self.llm,
@@ -394,6 +395,7 @@ loop:
 > - **同步 I/O**：原始设计使用 `async/await`，实际实现为同步（与 Phase 1 其余模块一致）。
 > - **模板渲染**：非单一 `INTEGRATION_RULES` 字符串，而是 `agent_id → callable` 字典。每个子 Agent 一个模板函数（如 `_recipe_template`），构造时注入自定义覆盖，未注册走 `_fallback_template`。
 > - **Hit 容错**：子 Agent 未注册 / `handle()` 抛异常 → 自动 fallback 到 Miss 聊天模式，不中断对话。
+> - **对话式 Agent 模板透传**：ChatAgent / MediaAgent 的模板（`_chat_template` / `_media_template`）直接透传 LLM 回复文本，不做军师角色包装——对话式 Agent 自身已在角色中。
 > - **Debug 日志**：`DEBUG` 环境变量或 `settings.yaml` 的 `debug: true` 控制 `logging.INFO` 级别输出，RAG 命中/未命中、子 Agent 切换全链路可见。
 
 ### 4.6 子 Agent 基类
@@ -443,13 +445,18 @@ class AgentContext:
 - 在 `data/memes.yaml` 中注册梗语料（H2 子类型名 = yaml 中的 sub_type）
 - 返回**结构化数据**（dict/Pydantic），供 Orchestrator 模板拼接
 
+> 📝 **已实现差异**:
+> - **同步 I/O**：实际 `handle()` 和 `parse_result()` 均为同步方法。
+> - **json_mode 分叉**：BaseAgent 默认 `handle()` 使用 `json_mode=True`（结构化输出）；对话式 Agent（chat/media）override `handle()` 使用 `json_mode=False`（自由文本），返回 `data={"response": raw_content}`。
+> - **JSON fallback 位置**：原设计 fallback 在 `_assemble_system_prompt()` 中（所有 Agent 共享），已移至 `BaseAgent.handle()` 中（仅 `json_mode=True` 路径触发），避免对话式 Agent 被注入 JSON 指令。
+
 ### 4.7 首批子 Agent
 
-| Agent ID | 子类型 | 功能 |
-|----------|--------|------|
-| `recipe_agent` | `吃什么`、`喝什么` | 菜谱/饮品推荐 |
-| `chat_agent` | `废话文学`、`哲理名言`、`与实不符` | 三国风格聊天互动 |
-| `media_agent` | `关羽之歌`、`折棒吐槽` | 媒体内容检索/播放 |
+| Agent ID | 子类型 | 功能 | json_mode | 备注 |
+|----------|--------|------|-----------|------|
+| `recipe_agent` | `吃什么`、`喝什么` | 菜谱/饮品推荐（结构化 JSON 输出） | `True` | 使用默认 `handle()` |
+| `chat_agent` | `废话文学`、`哲理名言`、`与实不符` | 三国风格聊天互动（自由对话） | `False` | override `handle()`，模板透传 |
+| `media_agent` | `关羽之歌`、`折棒吐槽` | 媒体内容（当前对话式 MVP，后续扩展链接/音乐） | `False` | override `handle()`，模板透传 |
 
 ## 5. Document References & Conventions
 

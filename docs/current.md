@@ -2,13 +2,13 @@
 
 **Current Phase:** Phase 1 — MVP（核心链路已闭环 ✅）
 
-**Current Task:** 7. 子 Agent（剩余 `chat.py` + `media.py`）
+**Current Task:** 7. 子 Agent ✅ 全部完成（recipe + chat + media）
 
-**Current SubTask:** `agents/chat.py` — ChatAgent（"废话文学" / "哲理名言" / "与实不符"）
+**Current SubTask:** 全部子 Agent 已实现（recipe / chat / media），均为对话式
 
 **Current Blocker:** None
 
-**Next Step:** Implement `agents/chat.py` (ChatAgent), then `agents/media.py` (MediaAgent).
+**Next Step:** 重新端到端验证（JSON fallback 已修复）：启动 CLI，测试 chat_agent / media_agent 的 RAG 命中 + 对话流程，确认输出纯文本非 JSON。
 
 **Important Decisions:**
 1. LLM Client 采用单 provider + 环境变量模式，非多 provider YAML profile
@@ -23,3 +23,4 @@
 10. 模板注册机制：per-agent 模板 callable（agent_id → fn），Orchestrator 构造时注入，未注册 fallback 到通用模板
 11. Hit 路径异常容错：子Agent 崩溃 / 未注册 → 自动 fallback 到 Miss 聊天模式
 12. Debug 日志：`DEBUG` 环境变量（`true`/`1`）控制 INFO 级别日志，输出 RAG 命中/切换/子Agent 切换全链路信息；`settings.yaml` 的 `debug: true` 等效
+13. 对话式 Agent（chat/media）override `handle()` 使用 `json_mode=False`，非 BaseAgent 默认的 `json_mode=True`；模板直接透传 LLM 回复，不做军师包装

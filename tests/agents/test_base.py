@@ -274,22 +274,10 @@ class TestAssembleSystemPrompt:
         result = agent._assemble_system_prompt("")
         assert result == "Role: chef. Output json."
 
-    def test_appends_json_fallback_when_missing(self):
+    def test_never_appends_fallback(self):
+        """JSON fallback moved to handle() — _assemble_system_prompt is pure concat."""
         agent = _make_minimal_agent("Role: chef.")  # no "json" word
         result = agent._assemble_system_prompt("")
-        assert _JSON_FALLBACK_SUFFIX in result
-        assert result.endswith(_JSON_FALLBACK_SUFFIX)
-
-    def test_does_not_append_fallback_when_json_present(self):
-        agent = _make_minimal_agent("You are a chef. Respond in JSON format.")
-        result = agent._assemble_system_prompt("")
-        assert _JSON_FALLBACK_SUFFIX not in result
-
-    def test_json_in_sub_prompt_also_prevents_fallback(self):
-        agent = _make_minimal_agent("Role: chef.")  # no json in system
-        result = agent._assemble_system_prompt(
-            "I need you to output valid json."
-        )
         assert _JSON_FALLBACK_SUFFIX not in result
 
 
@@ -389,3 +377,27 @@ class TestHandle:
         assert "Recommend food." in messages[0]["content"]
         assert messages[-1]["role"] == "user"
         assert messages[-1]["content"] == "吃什么"
+
+    # -- JSON fallback (now in handle(), not _assemble_system_prompt) --------
+
+    def test_handle_appends_json_fallback_when_prompt_lacks_json(self):
+        """handle() should append _JSON_FALLBACK_SUFFIX when the assembled
+        system prompt doesn't contain the word 'json'."""
+        agent, ctx, mock_llm = self._make_agent_and_ctx()
+        # Override system_prompt to one WITHOUT "json"
+        agent.system_prompt = "You are a helpful assistant."
+        agent.handle(ctx)
+
+        messages = mock_llm.chat.call_args[0][0]
+        system_content = messages[0]["content"]
+        assert _JSON_FALLBACK_SUFFIX in system_content
+
+    def test_handle_skips_json_fallback_when_prompt_has_json(self):
+        """handle() should NOT append fallback when 'json' is already present."""
+        agent, ctx, mock_llm = self._make_agent_and_ctx()
+        # system_prompt already has "Output json." — no fallback expected
+        agent.handle(ctx)
+
+        messages = mock_llm.chat.call_args[0][0]
+        system_content = messages[0]["content"]
+        assert _JSON_FALLBACK_SUFFIX not in system_content

@@ -176,6 +176,17 @@ class BaseAgent(ABC):
             Structured output; ``data`` is ``None`` when parsing fails.
         """
         messages = self._build_messages(ctx)
+
+        # JSON mode safety net: DeepSeek / OpenAI require "json" in the prompt
+        # when json_mode=True.  Only apply this check in the default handle()
+        # path — conversational sub-agents that override handle() and use
+        # json_mode=False do NOT need this.
+        has_json = any(
+            "json" in (msg.get("content", "") or "").lower() for msg in messages
+        )
+        if not has_json:
+            messages[0]["content"] += _JSON_FALLBACK_SUFFIX
+
         result = ctx.llm.chat(
             messages, temperature=self.temperature, json_mode=True
         )
@@ -212,7 +223,6 @@ class BaseAgent(ABC):
         Three layers (deterministic assembly):
 
         1. **System** — ``system_prompt`` + selected ``sub_type_prompt``
-           (+ JSON fallback suffix if needed)
         2. **History** — recent conversation turns from ``ctx.history``
         3. **User** — the current ``ctx.user_message``
         """
@@ -225,19 +235,14 @@ class BaseAgent(ABC):
         return messages
 
     def _assemble_system_prompt(self, sub_prompt: str) -> str:
-        """Combine ``system_prompt`` + *sub_prompt*, ensuring JSON instruction.
+        """Combine ``system_prompt`` + *sub_prompt* (pure concatenation).
 
-        Appends a minimal JSON fallback suffix if the word "json" does not
-        appear anywhere in the combined prompt (case-insensitive check).
-        Sub-agents that embed "json" in their own ``system_prompt`` will
-        never trigger the fallback.
+        No JSON fallback is appended here — that responsibility moved to
+        :meth:`handle` which runs only in the ``json_mode=True`` path.
+        Conversational sub-agents that override :meth:`handle` with
+        ``json_mode=False`` are unaffected.
         """
         parts = [self.system_prompt]
         if sub_prompt:
             parts.append(sub_prompt)
-        combined = "\n\n".join(parts)
-
-        if "json" not in combined.lower():
-            combined += _JSON_FALLBACK_SUFFIX
-
-        return combined
+        return "\n\n".join(parts)

@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 import sys
 
+from .agents.chat import ChatAgent
+from .agents.media import MediaAgent
 from .agents.recipe import RecipeAgent
 from .core.channel.cli import CliChannel
 from .core.config import ConfigLoader, LLMConfig
@@ -96,6 +98,8 @@ def main() -> None:
     # -- agents ----------------------------------------------------------------
     agents = {
         "recipe_agent": RecipeAgent(),
+        "chat_agent": ChatAgent(),
+        "media_agent": MediaAgent(),
     }
     if settings.debug:
         logger.info(

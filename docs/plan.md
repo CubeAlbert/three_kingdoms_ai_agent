@@ -31,7 +31,7 @@ relevant section. Read 100 lines at a time until the section is complete.
 - [x] 4. Channel 层：Channel 抽象 + CliChannel
 - [x] 5. Memory 层：MemoryManager 接口 + WindowMemory + LongTermMemory（空）
 - [x] 6. RAG 系统：Embedder + SqliteVecStore + Router + memes.yaml
-- [/] 7. 子 Agent：BaseAgent + RecipeAgent ✅ / ChatAgent ⬜ / MediaAgent ⬜
+- [x] 7. 子 Agent：BaseAgent + RecipeAgent ✅ / ChatAgent ✅ / MediaAgent ✅（全部对话式，chat/media 用 json_mode=False）
 - [x] 8. Orchestrator：双模式 prompt 拼装 + 主循环 + template_render + Debug 日志
 - [x] 9. CLI 入口：`main.py` 组装所有模块 + `scripts/run.bat` + 端到端验证
 
@@ -71,4 +71,4 @@ relevant section. Read 100 lines at a time until the section is complete.
 ### Cross-cutting
 
 - **json_mode + prompt 联动** — `json_mode=True` 要求 System Prompt 包含 "json" 字样 + 目标 JSON 结构。此项约束跨越 LLM Client、BaseAgent、各子 Agent 三层，需在 BaseAgent 模板中统一保证。
-- **梗语料管线** — `meme.md` (人工) → `memes.yaml` (LLM 提取) → ChromaDB (embed)。三个环节间的格式约定必须一致（H1/agent_id、H2/sub_type、列表项/text）。
+- **梗语料管线** — `meme.md` (人工) → `memes.yaml` (LLM 提取) → sqlite-vec (embed)。三个环节间的格式约定必须一致（H1/agent_id、H2/sub_type、列表项/text）。

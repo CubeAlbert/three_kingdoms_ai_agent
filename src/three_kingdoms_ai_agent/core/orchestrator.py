@@ -81,6 +81,18 @@ def _recipe_template(result: AgentResult) -> str:
     return "".join(parts)
 
 
+def _chat_template(result: AgentResult) -> str:
+    """Render ChatAgent conversational output."""
+    response = (result.data or {}).get("response", result.raw_content)
+    return response
+
+
+def _media_template(result: AgentResult) -> str:
+    """Render MediaAgent conversational output."""
+    response = (result.data or {}).get("response", result.raw_content)
+    return response
+
+
 def _fallback_template(result: AgentResult) -> str:
     """Generic template used when no per-agent template is registered."""
     if not result.data:
@@ -96,6 +108,8 @@ def _fallback_template(result: AgentResult) -> str:
 # agent_id → template callable
 _DEFAULT_TEMPLATES: dict[str, Callable[[AgentResult], str]] = {
     "recipe_agent": _recipe_template,
+    "chat_agent": _chat_template,
+    "media_agent": _media_template,
 }
 
 
